@@ -1,0 +1,4 @@
+.DS_Store
+node_modules/
+# machine-specific (absolute paths) dev-server config
+.claude/launch.json

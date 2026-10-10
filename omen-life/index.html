@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Omen Life</title>
+<link rel="stylesheet" href="../kit/kit.css">
+<style>
+  .layout { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 32px; margin-top: 26px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  .side { display: grid; gap: 16px; min-width: 0; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; font-size: 13px; }
+  dt { color: var(--muted); }
+  dd { margin: 0; }
+  .key { display: grid; gap: 6px; font-size: 12px; color: var(--muted); }
+  .key span { display: flex; gap: 8px; align-items: center; }
+  .key i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .how { font-size: 12.5px; color: var(--muted); margin: 0; }
+  .how p { margin: 0 0 8px; }
+  .how em { color: var(--ink); font-style: normal; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="row" style="justify-content: space-between; align-items: baseline;">
+    <div>
+      <h1>Omen Life</h1>
+      <p class="sub">The Game of Life on a Launchpad Mini. The next generation flickers on the grid before it arrives, so you can change it in time.</p>
+    </div>
+    <a class="small" href="../">all instruments</a>
+  </header>
+
+  <div class="row" style="margin-top: 18px;">
+    <button class="btn primary" id="begin">Begin</button>
+    <span class="status" id="status">Begin starts the sound and asks for MIDI access (Chrome or Edge).</span>
+  </div>
+
+  <div class="layout">
+    <div id="twin"></div>
+
+    <div class="side">
+      <div class="card">
+        <dl>
+          <dt>state</dt><dd id="playing"></dd>
+          <dt>generation</dt><dd id="gen"></dd>
+          <dt>alive</dt><dd id="pop"></dd>
+          <dt>rule</dt><dd id="rule"></dd>
+          <dt>tempo</dt><dd><span id="bpm"></span> bpm · 4 beats a generation</dd>
+          <dt>seed</dt><dd>No. <span id="seed"></span></dd>
+          <dt>omen</dt><dd id="omen"></dd>
+          <dt>auto-reseed</dt><dd id="auto"></dd>
+        </dl>
+      </div>
+
+      <div class="key">
+        <span><i style="background:#43d146"></i>alive</span>
+        <span><i style="background:#e8361f"></i>omen: dies next generation</span>
+        <span><i style="background:#f69a2a"></i>omen: born next generation</span>
+        <span><i style="background:#c8d23c"></i>sprinkled in by auto-reseed</span>
+      </div>
+
+      <div class="how">
+        <p>Press pads to bring cells to life or kill them. The omen flickers on the off-beats and speeds up through the last beat of each generation. Change a cell before the turn, and the omen changes with it.</p>
+        <p>Births sound as plucks and deaths as low ghosts. Pitch rises to the right and upward (D dorian).</p>
+        <p><em>Top row:</em> play, step, slower, faster, omen mode (flicker / steady / off), auto-reseed, reseed (next seed number), clear. <em>Right column:</em> the rule. Space plays and pauses.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="module" src="main.js"></script>
+</body>
+</html>

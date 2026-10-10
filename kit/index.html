@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grid Kit Bench</title>
+<link rel="stylesheet" href="kit.css">
+<style>
+  .layout { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 28px; margin-top: 24px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  .panel { display: grid; gap: 14px; min-width: 0; }
+  .modes .btn[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+  .count { font: 500 28px/1 var(--serif); color: var(--gold); }
+  .legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px 14px; font-size: 12px; margin-top: 8px; }
+  .legend span { display: flex; gap: 8px; align-items: center; }
+  .legend i { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); display: inline-block; }
+  #log { font-size: 11px; color: var(--muted); max-height: 180px; overflow: auto; white-space: pre; margin: 0; }
+  #scrollText { flex: 1; min-width: 10ch; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="row" style="justify-content: space-between; align-items: baseline;">
+    <div>
+      <h1>Grid kit bench</h1>
+      <p class="sub">Checks the Launchpad Mini over Web MIDI against its on-screen twin. Chrome or Edge on <code>localhost</code>.</p>
+    </div>
+    <a class="small" href="../">all instruments</a>
+  </header>
+
+  <div class="row" style="margin-top: 18px;">
+    <button class="btn primary" id="connect">Connect Launchpad</button>
+    <span class="status" id="status">not connected</span>
+  </div>
+
+  <div class="layout">
+    <div id="twin"></div>
+
+    <div class="panel">
+      <div class="row modes" role="group" aria-label="Mode">
+        <button class="btn" data-mode="test" aria-pressed="true">Button test</button>
+        <button class="btn" data-mode="palette" aria-pressed="false">Palette</button>
+        <button class="btn" data-mode="draw" aria-pressed="false">Draw</button>
+      </div>
+
+      <div class="card" data-panel="test">
+        <h2>Button test</h2>
+        <p class="small muted" style="margin: 0 0 10px;">Press every pad and round button on the Mini. Each one should light <em>itself</em>. If a different LED lights, the X-Y mapping is wrong. Twin clicks don't count toward the total.</p>
+        <div class="row"><span class="count" id="count">0 / 80</span><span class="small muted" id="missing"></span></div>
+        <div class="row" style="margin-top: 10px;"><button class="btn" id="resetTest">Reset</button></div>
+      </div>
+
+      <div class="card" data-panel="palette" hidden>
+        <h2>Palette</h2>
+        <p class="small muted" style="margin: 0;">The grid shows all 16 codes in 2×2 blocks: red rises to the right, green rises upward. The top row shows the named colours, left to right:</p>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <div class="card" data-panel="draw" hidden>
+        <h2>Draw</h2>
+        <p class="small muted" style="margin: 0;">Each press steps a pad through the named colours. The first top-row button clears the grid.</p>
+      </div>
+
+      <div class="card">
+        <h2>Scrolling text</h2>
+        <div class="row">
+          <input id="scrollText" value="omen" maxlength="60" aria-label="Text to scroll">
+          <select id="scrollSpeed" aria-label="Speed">
+            <option value="2">slow</option><option value="4">medium</option><option value="7" selected>fast</option>
+          </select>
+          <button class="btn" id="scroll">Scroll</button>
+        </div>
+        <p class="small muted" id="scrollResult" style="margin: 8px 0 0;">Needs SysEx permission.</p>
+      </div>
+
+      <div class="card">
+        <h2>Diagnostics</h2>
+        <div class="row">
+          <button class="btn" id="identify">Identify</button>
+          <button class="btn" id="measure">Measure frame rate</button>
+          <label class="small muted row" style="gap: 6px;">brightness
+            <input type="range" id="bright" min="0" max="6" value="4" aria-label="Brightness">
+          </label>
+        </div>
+        <p class="small muted" id="diag" style="margin: 8px 0 0;"></p>
+        <pre id="log"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { Grid } from './grid.js';
+import { C, SIZE, colour, gridIndex, topIndex } from './launchpad.js';
+import { cssColour } from './twin.js';
+
+const $ = id => document.getElementById(id);
+const grid = new Grid({ twin: $('twin') });
+const NAMED = Object.entries(C);                // [name, code], 8 entries
+let mode = 'test';
+
+// ----- status
+grid.on('status', ({ status, detail, sysex }) => {
+  const el = $('status');
+  el.className = 'status ' + (status === 'connected' ? 'ok' : status === 'idle' ? '' : 'bad');
+  const words = {
+    connected: `<b>connected</b> to ${detail}${sysex ? '' : ' · no SysEx (text and diagnostics off)'}`,
+    searching: `<b>waiting for a Launchpad Mini</b> · ${detail}`,
+    denied: `<b>MIDI permission denied</b> · ${detail}`,
+    unsupported: `<b>no Web MIDI in this browser</b> · use Chrome or Edge`,
+    standby: `<b>another page has the Launchpad</b> · click this page to take it`,
+  };
+  el.innerHTML = words[status] ?? status;
+  $('connect').disabled = status === 'connected';
+});
+$('connect').onclick = () => grid.connect();
+
+// ----- log of raw MIDI
+const lines = [];
+grid.on('midi', ({ data, event }) => {
+  const hex = data.map(b => b.toString(16).padStart(2, '0')).join(' ');
+  const what = event ? (event.type === 'press' || event.type === 'release'
+    ? `${event.type} ${event.kind} x${event.x} y${event.y}` : event.type) : '';
+  lines.unshift(`${hex.padEnd(24)} ${what}`);
+  lines.length = Math.min(lines.length, 40);
+  $('log').textContent = lines.join('\n');
+});
+
+// ----- modes
+document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m));
+  document.querySelectorAll('[data-panel]').forEach(p => p.hidden = p.dataset.panel !== m);
+  draw();
+}
+
+// Button test: hardware presses light their own key and count toward 80.
+const seen = new Set();
+// Draw: per-key colour, cycling through the named colours.
+const drawn = new Uint8Array(SIZE);
+const CYCLE = [C.OFF, C.GREEN, C.AMBER, C.RED, C.YELLOW, C.GREEN_DIM, C.AMBER_DIM, C.RED_DIM];
+
+grid.on('press', e => {
+  if (mode === 'test' && e.source === 'hardware') seen.add(e.index);
+  if (mode === 'draw') {
+    if (e.index === topIndex(0)) drawn.fill(C.OFF);
+    else drawn[e.index] = CYCLE[(CYCLE.indexOf(drawn[e.index]) + 1) % CYCLE.length];
+  }
+  draw();
+});
+grid.on('release', () => draw());
+$('resetTest').onclick = () => { seen.clear(); draw(); };
+
+function draw() {
+  const f = grid.frame();
+  if (mode === 'test') {
+    for (const i of seen) f.set(i, C.GREEN);
+    for (const i of grid.held.keys()) f.set(i, C.AMBER);
+    $('count').textContent = `${seen.size} / 80`;
+    $('missing').textContent = seen.size === 80 ? 'all buttons decoded' : '';
+  } else if (mode === 'palette') {
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++)
+      f.grid(x, y, colour(x >> 1, (7 - y) >> 1));
+    NAMED.forEach(([, code], x) => f.top(x, code));
+  } else {
+    f.data.set(drawn);
+  }
+  grid.show(f);
+}
+
+$('legend').innerHTML = NAMED.map(([name, code]) =>
+  `<span><i style="background:${cssColour(code) ?? 'transparent'}"></i>${name.toLowerCase().replace('_', ' ')}</span>`).join('');
+
+// ----- scrolling text
+$('scroll').onclick = async () => {
+  const t0 = performance.now();
+  $('scrollResult').textContent = 'scrolling…';
+  const ok = await grid.scroll($('scrollText').value, { speed: Number($('scrollSpeed').value), colour: C.AMBER });
+  $('scrollResult').textContent = ok
+    ? `Mini reported the end after ${((performance.now() - t0) / 1000).toFixed(2)} s`
+    : grid.sysex ? 'stopped or timed out' : 'needs a connected Mini with SysEx permission';
+};
+
+// ----- diagnostics
+$('identify').onclick = async () => {
+  const id = await grid.identify();
+  $('diag').textContent = id
+    ? `family ${id.family.map(b => b.toString(16).padStart(2, '0')).join(' ')}${id.family[0] === 0x36 ? ' (original Launchpad Mini)' : ''}`
+    : 'no reply (needs SysEx)';
+};
+$('measure').onclick = async () => {
+  $('diag').textContent = 'measuring…';
+  const r = await grid.measure(200);
+  $('diag').textContent = r
+    ? `${r.frames} full frames in ${r.ms.toFixed(0)} ms → ${r.fps.toFixed(0)} frames/s through Web MIDI`
+    : 'needs a connected Mini with SysEx permission';
+};
+// The Mini's brightness is a fraction; 1/5 is its default, and the manual
+// calls anything above 1/3 not much use.
+const BRIGHT = [18, 12, 9, 7, 5, 4, 3];
+$('bright').oninput = e => grid.brightness(1, BRIGHT[Number(e.target.value)]);
+
+window.kit = { grid, seen, setMode };
+draw();
+</script>
+</body>
+</html>

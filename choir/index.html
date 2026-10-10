@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Choir</title>
+<link rel="stylesheet" href="../kit/kit.css">
+<style>
+  .layout { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 32px; margin-top: 26px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  .side { display: grid; gap: 16px; min-width: 0; }
+  .now { display: flex; gap: 22px; align-items: baseline; flex-wrap: wrap; }
+  .chordbox { min-width: 4ch; }
+  #chord { font: 500 40px/1 var(--serif); color: var(--ink); }
+  #fn { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin-top: 6px; }
+  [data-fn="home"] { color: #6fcf6a; }
+  [data-fn="away"] { color: #e8613f; }
+  [data-fn="tension"] { color: #f2a33a; }
+  .satb { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 12px; font-size: 13px; }
+  .satb dt { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .satb dd { margin: 0; }
+  #trip { margin: 12px 0 0; font-size: 13px; color: var(--gold); }
+  .mod { color: var(--muted); font-size: 12px; }
+  #twin .twin { grid-template-columns: repeat(9, var(--cell)) minmax(0, 9.5em); }
+  #twin .twin-label.right { text-transform: none; letter-spacing: 0; font-size: 11px; }
+  dl.meta { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; font-size: 13px; }
+  dl.meta dt { color: var(--muted); }
+  dl.meta dd { margin: 0; }
+  #history { font-size: 13px; line-height: 1.8; word-spacing: 3px; overflow-wrap: anywhere; }
+  .legend { display: grid; gap: 6px; font-size: 12.5px; }
+  .legend > span { display: flex; gap: 10px; align-items: baseline; }
+  .legend .note { margin: 2px 0 0; }
+  .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; transform: translateY(1px); }
+  .how { font-size: 12.5px; color: var(--muted); margin: 0; }
+  .how p { margin: 0 0 8px; }
+  .how em { color: var(--ink); font-style: normal; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="row" style="justify-content: space-between; align-items: baseline;">
+    <div>
+      <h1>Choir</h1>
+      <p class="sub">You play the melody on the Launchpad. Bach's rules give every note a four-part chord the moment you press it.</p>
+    </div>
+    <a class="small" href="../">all instruments</a>
+  </header>
+
+  <div class="row" style="margin-top: 18px;">
+    <button class="btn primary" id="begin">Begin</button>
+    <span class="status" id="status">Begin starts the organ and asks for MIDI access (Chrome or Edge).</span>
+  </div>
+
+  <div class="layout">
+    <div id="twin"></div>
+
+    <div class="side">
+      <div class="card">
+        <div class="now">
+          <div class="chordbox"><div id="chord">—</div><div id="fn"></div></div>
+          <dl class="satb">
+            <dt>soprano</dt><dt>alto</dt><dt>tenor</dt><dt>bass</dt>
+            <dd id="v-s">—</dd><dd id="v-a">—</dd><dd id="v-t">—</dd><dd id="v-b">—</dd>
+          </dl>
+        </div>
+        <p id="trip" hidden></p>
+      </div>
+
+      <div class="card legend">
+        <span><i style="background:#43d146"></i><span><b data-fn="home">Home</b>: this note brings the tonic (I) or its relative (vi). Rest.</span></span>
+        <span><i style="background:#e8361f"></i><span><b data-fn="away">Away</b>: a pre-dominant chord (ii, IV). Leaving home.</span></span>
+        <span><i style="background:#f69a2a"></i><span><b data-fn="tension">Tension</b>: a dominant (V, vii°, iii) or a chord pulling toward another. It wants to resolve.</span></span>
+        <p class="note muted small">A phrase is a short trip: settle on green, step out to red, lean on amber, come home to green. The colors show what each key would bring <em>right now</em> and change after every note. No key is wrong.</p>
+      </div>
+
+      <div class="card">
+        <dl class="meta">
+          <dt>key</dt><dd id="key"></dd>
+          <dt>latch</dt><dd id="latch"></dd>
+          <dt>checked</dt><dd id="check"></dd>
+        </dl>
+        <p class="small muted" style="margin: 12px 0 4px;">so far</p>
+        <div id="history">—</div>
+      </div>
+
+      <div class="how">
+        <p><em>The keyboard.</em> The columns are do re mi fa sol la ti do in every key, so the left column is always home. The bottom half of the grid is one octave and the top half the octave above. Each key is a bar four pads tall: its lower half shows what it would bring, and the bar fills while it sounds. In minor, the 6th and 7th rise when you climb to them and fall when you come down, as singers do.</p>
+        <p><em>Where the phrase goes: the right column.</em> Eight keys: home at the top, then the five keys Bach's chorales most often move to, the parallel major or minor, and one far key. Each is lit by how far it is from where you are: green is a step away (it shares all but one note), amber further, red far. The key you're in pulses. Press one to take the phrase there. The grid re-centres on that key, and two kinds of key light up in turn: <b data-fn="tension">amber</b> is the way in (the choir sings the new key's dominant), then <b data-fn="home">green</b> lands on its tonic. Press the key you're already in to end the phrase there the same way: a cadence. Press a blinking button again to stay where you are. (C on the keyboard does the same for the key you're in.)</p>
+        <p><em>Top row:</em> the piece's home key down a fifth or up a fifth, major/minor, new piece (back home), latch, then alto, tenor and bass on/off. With latch on (the default), each chord rings until your next note, so you don't have to keep time. N starts a new piece and L toggles latch.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="module" src="main.js"></script>
+</body>
+</html>

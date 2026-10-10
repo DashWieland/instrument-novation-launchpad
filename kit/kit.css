@@ -1,0 +1,73 @@
+/* Shared look for the Launchpad pages: dark and warm, after the hurdy-gurdy. */
+:root {
+  --bg: #0f0e0c; --surface: #1c1a16; --border: #3a3630;
+  --ink: #e8e0d0; --muted: #938a78; --faint: #5d564b;
+  --rust: #c4621d; --gold: #d4a017; --moss: #5a9068; --danger: #b2452f;
+  --pad: #24211c; --pad-edge: #34302a; --round: #2a2722;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--mono); }
+a { color: var(--gold); }
+h1 { font: 500 30px/1.1 var(--serif); margin: 0; letter-spacing: .2px; }
+h2 { font: 500 18px/1.2 var(--serif); margin: 0 0 8px; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 32px 16px 48px; }
+.sub { color: var(--muted); margin: 6px 0 0; max-width: 60ch; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+.btn {
+  background: transparent; border: 1px solid var(--border); color: var(--ink);
+  font: 12px var(--mono); letter-spacing: .06em; text-transform: uppercase;
+  padding: 7px 12px; border-radius: 2px; cursor: pointer;
+}
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn.primary { border-color: var(--rust); color: var(--rust); }
+.btn:disabled { opacity: .4; cursor: default; }
+input, select {
+  background: var(--surface); color: var(--ink); border: 1px solid var(--border);
+  font: 13px var(--mono); padding: 6px 8px; border-radius: 2px;
+}
+
+.status { font-size: 12px; color: var(--muted); }
+.status b { font-weight: 500; color: var(--gold); }
+.status.ok b { color: #7fbf7a; }
+.status.bad b { color: var(--danger); }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 14px 16px; }
+
+/* ------------------------------------------------------------------ twin -- */
+.twin {
+  --cell: min(46px, calc((100vw - 32px) / 11.5));
+  display: grid; gap: calc(var(--cell) * .14);
+  grid-template-columns: repeat(9, var(--cell));
+  grid-template-rows: 0 repeat(9, var(--cell));
+  padding: calc(var(--cell) * .3); border-radius: 10px;
+  background: #151310; border: 1px solid var(--pad-edge);
+  width: max-content; user-select: none; -webkit-user-select: none; touch-action: none;
+}
+.twin.labelled {
+  grid-template-columns: repeat(9, var(--cell)) minmax(0, 8.5em);
+  grid-template-rows: 2.6em repeat(9, var(--cell));
+}
+.twin.labelled-bottom { grid-template-rows: 0 repeat(9, var(--cell)) auto; }
+.twin.labelled.labelled-bottom { grid-template-rows: 2.6em repeat(9, var(--cell)) auto; }
+.twin-key {
+  --led: transparent;
+  width: 100%; height: 100%; padding: 0; margin: 0; cursor: pointer;
+  border: 1px solid var(--pad-edge); border-radius: 4px; background: var(--pad);
+  transition: background-color 40ms linear, box-shadow 40ms linear;
+}
+.twin-key.top, .twin-key.right { border-radius: 50%; background: var(--round); transform: scale(.72); }
+.twin-key.lit { background: var(--led); border-color: var(--led); box-shadow: 0 0 calc(var(--cell) * .28) -2px var(--led); }
+.twin-key.pressed, .twin-key.held { outline: 2px solid var(--ink); outline-offset: 1px; }
+.twin-key:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.twin-label { font-size: 10px; line-height: 1.15; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; overflow: hidden; }
+.twin-label.top { align-self: end; text-align: center; padding-bottom: 2px; word-break: break-word; }
+.twin-label.right { align-self: center; padding-left: 4px; white-space: nowrap; text-overflow: ellipsis; }
+.twin-label.bottom { text-align: center; white-space: pre-line; padding-top: 4px; text-transform: none; letter-spacing: 0; font-size: 11px; }
+.twin:not(.labelled) .twin-label.top, .twin:not(.labelled) .twin-label.right { display: none; }
+.twin:not(.labelled-bottom) .twin-label.bottom { display: none; }
