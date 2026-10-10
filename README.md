@@ -202,3 +202,7 @@ Done on 2026-10-10:
 - Dash found the armed cadence button unintuitive and proposed keys on the right column, coloured by how smoothly you can reach them. That became the destinations above. It also measured that arming did matter: an armed ending was a root-position I 87% of the time, against 17% unarmed.
 
 **Not yet verified:** the destinations, played on the Launchpad.
+
+## License
+
+MIT, see [LICENSE](LICENSE). The vendored choral-counterpoint files are MIT too (`vendor/choral-counterpoint/LICENSE`).
