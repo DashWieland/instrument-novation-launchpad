@@ -10,10 +10,11 @@
 //            so the live result can be set beside the engine's own (which
 //            plans each phrase ahead).
 
-import { Harmonizer, functionOf, CADENTIAL } from '../choir/harmonizer.js';
+import { Harmonizer, functionOf, CADENTIAL, wants } from '../choir/harmonizer.js';
 import { pitchOf, playable } from '../choir/layout.js';
 import { destinations, sameKey, distance } from '../choir/keys.js';
 import { tripView, tripPlay } from '../choir/trip.js';
+import { chooseFigure, checkFigures } from '../choir/figures.js';
 import { composePiece, checkChorale } from '../vendor/choral-counterpoint/engine.js';
 
 export function rng(seed) {
@@ -198,6 +199,60 @@ export function journey(seed, legs = 4) {
   return { h, trips: trips.slice(1) };
 }
 
+// All four pads of a key, played at random: the first-choice chord, the
+// second chord, the figure (falling back to the plain chord when none fits)
+// and the roll (no different in pitch). Single key, so the engine's ornament
+// checker (one key) can read the result.
+export function playedWithPads(seed) {
+  const { tonicPc, mode, melody } = playedMelody(seed);
+  const r = rng(seed * 31 + 7);
+  const h = new Harmonizer(tonicPc, mode);
+  const used = { a: 0, b: 0, figure: 0, none: 0, roll: 0 }, types = {};
+  for (const { s } of melody) {
+    const pad = ['a', 'b', 'figure', 'roll'][Math.floor(r() * 4)];
+    const { a, b } = h.options(s);
+    let chord = a;
+    if (pad === 'b' && b) { chord = b; used.b++; }
+    else if (pad === 'figure') {
+      const f = chooseFigure(h.chords.at(-1), a);
+      if (f) { chord = { ...a, figure: f }; used.figure++; types[f.type] = (types[f.type] || 0) + 1; } else used.none++;
+    } else used[pad === 'b' ? 'a' : pad]++;
+    h.commit(chord);
+  }
+  // What the figures added: the checker's complaints about the decorated
+  // surface, less those it makes about the same chords undecorated (the
+  // melody's own leaps, which the player chose).
+  const decorated = checkFigures(h.chords, tonicPc, mode, h.fermatas).V;
+  const plain = checkFigures(h.chords.map(({ figure, ...c }) => c), tonicPc, mode, h.fermatas).V;
+  const left = [...plain], added = [];
+  for (const v of decorated) { const k = left.indexOf(v); if (k >= 0) left.splice(k, 1); else added.push(v); }
+  return { h, used, types, surface: { V: added } };
+}
+
+// The tension ladder: a random rung of every note's four (single key). Also
+// counts how often the ladder spans settled to tense, and whether, when the
+// last chord wants somewhere (wants()), some key on the grid offers it.
+export function playedWithLadder(seed) {
+  const { tonicPc, mode, melody } = playedMelody(seed);
+  const r = rng(seed * 17 + 3);
+  const h = new Harmonizer(tonicPc, mode);
+  const stats = { notes: 0, span: 0, distinct: 0, wanted: 0, offered: 0 };
+  for (const { s } of melody) {
+    const rungs = h.ladder(s);
+    stats.notes++;
+    stats.distinct += new Set(rungs.map(c => c.name)).size;
+    if (rungs.some(c => functionOf(c.name) === 'home') && rungs.some(c => functionOf(c.name) === 'tension')) stats.span++;
+    const want = wants(h.chords.at(-1));
+    if (want) {
+      stats.wanted++;
+      const prev = h.chords.at(-1).s;
+      if (available({ tonicPc, mode }, prev).some(m => h.ladder(m).some(want))) stats.offered++;
+    }
+    h.commit(rungs[Math.floor(r() * 4)]);
+  }
+  return { h, stats };
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const N = Number(process.argv[2] ?? 300);
   summarize('played (random walks)', Array.from({ length: N }, (_, i) => run(playedMelody(i + 1))));
@@ -222,6 +277,22 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     for (let m = lo; m <= hi; m++) for (const k in t) t[k] += by.get(m)?.[k] ?? 0;
     console.log(`  do ${nm(lo)}–${nm(hi)}: ${t.n} endings · ${(100 * t.ended / t.n).toFixed(0)}% end the phrase · ${(100 * t.closed / t.n).toFixed(0)}% close on I/i · ${t.broke} rule breaks · ${t.invalid} non-cadential`);
   }
+  const P = Array.from({ length: Math.min(N, 1000) }, (_, i) => playedWithPads(i + 1));
+  const pc = (a, b) => (100 * a / b).toFixed(0) + '%';
+  const tally = P.reduce((t, p) => { for (const k in p.used) t[k] = (t[k] || 0) + p.used[k]; return t; }, {});
+  const types = P.reduce((t, p) => { for (const k in p.types) t[k] = (t[k] || 0) + p.types[k]; return t; }, {});
+  const chordBreaks = P.reduce((a, p) => a + p.h.check().V.filter(v => !v.startsWith('s:')).length, 0);
+  const surfaceV = P.flatMap(p => p.surface.V);
+  const kinds = {}; for (const v of surfaceV) { const k = v.replace(/ slot \d+| \(.*\)|chords? \d+(-\d+)?:? ?/g, '').trim(); kinds[k] = (kinds[k] || 0) + 1; }
+  const figTries = (tally.figure || 0) + (tally.none || 0);
+  console.log(`all four pads at random: ${P.length} melodies, ${P.reduce((a, p) => a + p.h.chords.length, 0)} chords`);
+  console.log(`  second chord taken ${tally.b} times · figure pad ${figTries} times, a figure fitted ${pc(tally.figure, figTries)}: ${Object.entries(types).map(([k, n]) => `${k} ${n}`).join(', ')}`);
+  console.log(`  chord rule breaks ${chordBreaks} · ornament checker violations the figures added ${surfaceV.length}${surfaceV.length ? ' ' + JSON.stringify(kinds) : ''}`);
+  const L = Array.from({ length: Math.min(N, 500) }, (_, i) => playedWithLadder(i + 1));
+  const ls = L.reduce((t, l) => { for (const k in l.stats) t[k] = (t[k] || 0) + l.stats[k]; return t; }, {});
+  const lBreaks = L.reduce((a, l) => a + l.h.check().V.filter(v => !v.startsWith('s:')).length, 0);
+  console.log(`tension ladder, a random rung every note: ${L.length} melodies, ${ls.notes} chords · ${lBreaks} chord rule breaks`);
+  console.log(`  distinct chords per key ${(ls.distinct / ls.notes).toFixed(2)} of 4 · spans settled to tense ${pc(ls.span, ls.notes)} · when the last chord wants somewhere (${ls.wanted}), a key offers it ${pc(ls.offered, ls.wanted)}`);
   const J = Array.from({ length: Math.min(N, 1000) }, (_, i) => journey(i + 1));
   const trips = J.flatMap(j => j.trips);
   const breaks = J.reduce((a, j) => a + j.h.check().V.filter(v => !v.startsWith('s:')).length, 0);

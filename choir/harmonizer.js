@@ -55,6 +55,29 @@ const ARRIVAL = { major: new Set(['I']), minor: new Set(['i']) };
 // The chords that lead into a key's tonic: the way in to an arrival.
 export const DOMINANT = new Set(['V', 'V7', 'viio', 'viio7']);
 
+// Tension in four rungs, the grid's ladder: 0 settled (I vi; i VI III),
+// 1 away (IV ii ii7; iv ii° ii°7 ♭VII), 2 tense (V vii° iii; minor v),
+// 3 most tense (V7, vii°7 and every secondary dominant).
+const RUNG = { I: 0, vi: 0, i: 0, VI: 0, III: 0, IV: 1, ii: 1, ii7: 1, iv: 1, iio: 1, iio7: 1, bVII: 1, V: 2, viio: 2, iii: 2, v: 2 };
+export const rungOf = name => RUNG[name] ?? 3;
+// Finer: how settled, within the settled rung. The tonic is home itself; its
+// relatives stand in for it (vi after V is a deceptive cadence, not arrival).
+const SETTLED = { I: 0, i: 0, vi: 1, VI: 1, III: 2 };
+
+// Where the last chord wants to go, as a test on candidate chords: a
+// dominant wants its tonic; a secondary dominant wants its target; an away
+// chord wants a dominant (away → tense → home). A settled chord wants
+// nothing in particular (null).
+export function wants(last) {
+  if (!last) return null;
+  const ch = CHORDS[last.mode][last.ci];
+  const abs = r => mod12(r + last.tonicPc);
+  if (DOMINANT.has(ch.name)) return c => c.name === 'I' || c.name === 'i';
+  if (ch.target !== null) return c => mod12(CHORDS[c.mode][c.ci].pcs[0] + c.tonicPc) === abs(ch.target);
+  if (functionOf(ch.name) === 'away') return c => DOMINANT.has(c.name);
+  return null;
+}
+
 export class Harmonizer {
   constructor(tonicPc = 7, mode = 'major') { this.setKey(tonicPc, mode); }
 
@@ -85,6 +108,63 @@ export class Harmonizer {
     this.chords.push(chord);
     if (chord.cadence) this.fermatas.push(this.chords.length);
     return chord;
+  }
+
+  // Sing a chord already worked out by peek or options (the one the player chose).
+  commit(chord) {
+    this.chords.push(chord);
+    if (chord.cadence) this.fermatas.push(this.chords.length);
+    return chord;
+  }
+
+  // Two ways to harmonize `s`: the choir's first choice, and the best chord
+  // with a different name, preferring one that does something else (another
+  // colour on the grid). Both obey the same rules; the second is just less
+  // like what Bach most often wrote. `b` is null if no other chord fits.
+  options(s) {
+    const a = this.peek(s);
+    const pool = new Map();
+    for (let stage = 0; stage < 2 && !pool.size; stage++) this.#search(s, false, stage, null, true, pool);
+    pool.delete(a.name);
+    const rest = [...pool.values()].sort((x, y) => y.score - x.score);
+    const other = rest.find(c => functionOf(CHORDS[this.mode][c.ci].name) !== functionOf(a.name)) ?? rest[0];
+    const b = other ? { s, a: other.a, t: other.t, b: other.b, ci: other.ci, name: CHORDS[this.mode][other.ci].name,
+      cadence: false, stage: other.stage, tonicPc: this.tonicPc, mode: this.mode } : null;
+    return { a, b };
+  }
+
+  // Four chords for `s`, from most settled to most tense: the ladder a key's
+  // four pads show. The bottom rung is the most settled chord that fits (the
+  // tonic when it can be); each other rung is the best voicing of the best
+  // chord of its kind (rungOf) that fits under the rules; an empty rung takes the next
+  // best chord of a neighbouring kind, and if fewer than four chords fit at
+  // all the most tense repeats. Chromatic chords (secondary dominants) are
+  // allowed here even when nothing forces them: they are the top rung, and
+  // the grid shows where each wants to go. Chords from the wider search stage
+  // (any bass) count too, scored below the oracle's.
+  ladder(s) {
+    const pool = new Map();
+    this.#search(s, false, 0, null, true, pool);
+    // the next search stage, still under every hard rule, adds chords the
+    // oracle didn't propose a bass for, and unforced chromatic ones
+    const wider = new Map();
+    this.#search(s, false, 1, null, true, wider);
+    for (const [name, c] of wider) if (!pool.has(name)) pool.set(name, c);
+    const cands = [...pool.entries()].map(([name, c]) => ({ ...c, name, rung: rungOf(name) }));
+    const byRung = [0, 1, 2, 3].map(r => cands.filter(c => c.rung === r).sort((x, y) => y.score - x.score));
+    byRung[0].sort((x, y) => SETTLED[x.name] - SETTLED[y.name] || y.score - x.score);   // the tonic first
+    const chosen = byRung.map(list => list[0] ?? null);
+    for (let r = 0; r < 4; r++) if (!chosen[r]) {
+      for (const d of [1, -1, 2, -2, 3, -3]) {
+        const c = byRung[r + d]?.find(x => !chosen.includes(x));
+        if (c) { chosen[r] = c; break; }
+      }
+    }
+    const rungs = chosen.filter(Boolean).sort((x, y) => x.rung - y.rung || (SETTLED[x.name] ?? 0) - (SETTLED[y.name] ?? 0) || y.score - x.score);
+    if (!rungs.length) rungs.push({ ...this.peek(s), rung: rungOf(this.peek(s).name) });
+    while (rungs.length < 4) rungs.push(rungs.at(-1));
+    return rungs.map(c => ({ s, a: c.a, t: c.t, b: c.b, ci: c.ci, name: c.name, cadence: false,
+      stage: c.stage ?? 0, tonicPc: this.tonicPc, mode: this.mode }));
   }
 
   // The chord `s` would get now, without singing it (for the grid's preview).
@@ -137,7 +217,8 @@ export class Harmonizer {
     return { V, W };
   }
 
-  #search(s, cadence, stage, endings = null, rootOnly = true) {
+  // pool: if given, also collect the best voicing of every chord name (options).
+  #search(s, cadence, stage, endings = null, rootOnly = true, pool = null) {
     const { tonicPc: tonic, mode } = this;
     const rel = m => mod12(m - tonic), abspc = r => mod12(r + tonic);
     const pairs = PAIRS[mode], scale = SCALES[mode], vocab = CHORDS[mode];
@@ -225,6 +306,10 @@ export class Harmonizer {
             score -= 0.1 * (Math.abs(a - prev.a) + Math.abs(t - prev.t));   // still keep near
           }
           if (!best || score > best.score) best = { a, t, b, ci, score };
+          if (pool) {
+            const name = vocab[ci].name, had = pool.get(name);
+            if (!had || score > had.score) pool.set(name, { a, t, b, ci, score, stage });
+          }
         }
       }
     }

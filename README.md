@@ -39,7 +39,20 @@ You play the melody on the grid, one note at a time, in any rhythm. Each note ge
 
 **On the grid: a two-octave keyboard** (`choir/layout.js`).
 - **Columns.** The eight columns are do re mi fa sol la ti do in every key, so the left column is always home. The note names are printed under the twin.
-- **Octaves.** The bottom four rows are the lower octave and the top four the upper. Each key is a bar four pads tall: right is one scale step, up is an octave.
+- **Octaves.** The bottom four rows are the lower octave and the top four the upper. Right is one scale step, up is an octave.
+- **Four pads per key: a tension ladder** (`Harmonizer.ladder`). Four chords for the same note, from the most settled at the bottom to the most tense at the top, each lit in its colour:
+  - settled: the tonic (I) where it fits, otherwise vi;
+  - away: IV, ii;
+  - tense: V, vii°, iii;
+  - most tense: V7, vii°7, secondary dominants.
+
+  To resolve, press lower; to build, press higher. Each rung is the best chord of its kind under the same hard rules. If a kind can't fit under a note, the next best chord fills in.
+- **Clues: where the last chord wants to go** (`wants()`). Those pads pulse, and a line under the chord says why:
+  - after a dominant, its tonic;
+  - after a secondary dominant (V/ii), its target (ii);
+  - after an away chord, a dominant.
+
+  An earlier version gave each key's top two pads a figure (press, then lift to resolve) and a rolled chord. In play that read as a "bounce", and the unlit pads didn't say what they did. `choir/figures.js` is kept for a possible "flow" setting.
 - **Range.** The lower do is the tonic between C4 and B4. Below C4 the choir was squeezed: phrases ending on a do there closed on I only about half the time. Keys above E6 stay dark (at most four, in B♭ and B).
 - **Minor.** The 6th and 7th rise (la, ti) when the melody climbs to them and fall (le, te) when it comes down, as singers do. So the melody never makes le-to-ti's augmented second.
 
@@ -61,10 +74,16 @@ A phrase is a short trip: settle on green, step out to red, lean on amber, then 
 
 | Controls | |
 |---|---|
-| Grid keys | play the soprano |
+| Grid keys | play the soprano; each key's four pads are its tension ladder, settled at the bottom to tense at the top |
 | Right column | **destinations:** press a key to take the phrase there (amber keys, then green); your own key is a cadence |
 | Top row | the piece's home key down a fifth · up a fifth · major/minor · new piece (back home) · latch · alto · tenor · bass on/off |
 | N / L / C | new piece / latch / cadence in the key you're in |
+
+**Recording into a DAW** (`choir/output.js`). The Output card has two menus:
+- **Hear it on:** your headphones or speakers.
+- **Also send to:** a copy of exactly Choir's sound on a second device, e.g. [BlackHole 2ch](https://github.com/ExistentialAudio/BlackHole) (`brew install --cask blackhole-2ch`).
+
+Record that device's input in your DAW; the rest of the Mac keeps its own output. How it's wired: the organ gets a stand-in audio context whose `destination` is a bus, which feeds both `AudioContext.setSinkId` and an audio element's `setSinkId`. Needs Chrome 110 or later. Chrome names output devices only after the page has had microphone permission once; the page asks, then closes the microphone at once. The page has step-by-step Ableton instructions.
 
 **Latch** is on by default: each chord rings until your next note, so you don't have to keep time. Turn it off to sound chords only while held. The side panel names each chord and its function, shows the four voices and the history (colored by function), and runs the engine's checker live.
 
@@ -91,6 +110,16 @@ A phrase is a short trip: settle on green, step out to red, lean on amber, then 
 | C6–E6 | 1,187 | 99% | 84% | 0 | 0 |
 
 The same check on the old keyboard (low do from G3) closed on I 38–59% of the time below G4. The approach colour matters: approached from a true dominant, a cadence on do closed on I 70% of the time; approached from red, 10%. That was measured on the old rules; it's why the grid suggests amber before home.
+
+**The tension ladder.** Same tool, 500 melodies, a random rung on every note (17,714 chords): **0 rule breaks**. On average 3.9 of a key's four pads are different chords. 55% of notes span settled to tense; the rest are notes no tonic chord contains (re, fa, ti). In 11,984 cases the last chord wanted somewhere, and some key on the grid offered it in all of them.
+
+**All four pads (the earlier version, figures and a second chord).** Same tool, 1,000 melodies with a random one of the four pads on every note (35,437 chords):
+
+| | |
+|---|---|
+| Second chord taken | 8,510 times, **0 rule breaks** |
+| Figure pad pressed | 8,747 times. A figure fitted 92% of the time: 2,943 suspensions, 2,187 anticipations, 1,332 neighbours, 1,305 passing notes, 249 bass passing notes. |
+| Ornament-checker violations the figures added | **0**. That's the decorated surface checked against the same chords undecorated; the undecorated ones carry only the melody's own leaps. |
 
 **Journeys between keys.** Same tool: 1,000 pieces, each opening at home and then changing key four times, to a random one of the other seven destinations. The simulated player follows the lights: the nearest lit key within a fourth, or a step toward the new do when none is lit.
 
@@ -201,7 +230,11 @@ Done on 2026-10-10:
 
 - Dash found the armed cadence button unintuitive and proposed keys on the right column, coloured by how smoothly you can reach them. That became the destinations above. It also measured that arming did matter: an armed ending was a root-position I 87% of the time, against 17% unarmed.
 
-**Not yet verified:** the destinations, played on the Launchpad.
+- Destinations, played by Dash: "extremely beautiful and fun… I love now moving between the different scales and hearing it sound dissonant and then somehow stepping back into key". But "it is just chords", and the four pads of a key all did the same thing. So each key's pads now give two chords and two figures.
+
+- Four pads per key, played by Dash and others. The four jobs were confusing: the figure pad "bounced the sound", and the unlit pads weren't transparent. They also asked for crescendo and decrescendo; that's on hold. Their idea: choose to build or resolve tension, with clues about where to go. That's now the tension ladder.
+
+**Not yet verified:** the tension ladder, played on the Launchpad.
 
 ## License
 

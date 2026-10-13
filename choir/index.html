@@ -13,6 +13,13 @@
   .chordbox { min-width: 4ch; }
   #chord { font: 500 40px/1 var(--serif); color: var(--ink); }
   #fn { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin-top: 6px; }
+  #hint { font-size: 12px; color: var(--gold); margin-top: 4px; max-width: 24ch; }
+  .outs { display: grid; gap: 8px; font-size: 13px; }
+  .outs label { display: grid; grid-template-columns: 9em minmax(0, 1fr); align-items: center; gap: 8px; color: var(--muted); }
+  .outs select { min-width: 0; width: 100%; }
+  .steps { margin: 8px 0 0; padding-left: 1.3em; display: grid; gap: 4px; color: var(--muted); }
+  .steps b { color: var(--ink); font-weight: 500; }
+  summary { cursor: pointer; color: var(--ink); }
   [data-fn="home"] { color: #6fcf6a; }
   [data-fn="away"] { color: #e8613f; }
   [data-fn="tension"] { color: #f2a33a; }
@@ -57,13 +64,33 @@
     <div class="side">
       <div class="card">
         <div class="now">
-          <div class="chordbox"><div id="chord">—</div><div id="fn"></div></div>
+          <div class="chordbox"><div id="chord">—</div><div id="fn"></div><div id="hint"></div></div>
           <dl class="satb">
             <dt>soprano</dt><dt>alto</dt><dt>tenor</dt><dt>bass</dt>
             <dd id="v-s">—</dd><dd id="v-a">—</dd><dd id="v-t">—</dd><dd id="v-b">—</dd>
           </dl>
         </div>
         <p id="trip" hidden></p>
+      </div>
+
+      <div class="card">
+        <h2>Output</h2>
+        <div class="outs">
+          <label>hear it on <select id="hear" disabled><option>click Begin first</option></select></label>
+          <label>also send to <select id="send" disabled><option value="">nothing</option></select></label>
+        </div>
+        <p class="small muted" id="outnote" style="margin: 8px 0 0;">Choose after clicking Begin. Send a copy to BlackHole 2ch to record into a DAW; the rest of your Mac keeps its own output.</p>
+        <button class="btn" id="names" hidden style="margin-top: 8px;">Show device names</button>
+        <details class="small" style="margin-top: 10px;">
+          <summary>Recording into Ableton</summary>
+          <ol class="steps">
+            <li>Here: <em>also send to</em> → <b>BlackHole 2ch</b>. Keep <em>hear it on</em> on your headphones or speakers.</li>
+            <li>Ableton → Settings → Audio: <b>Audio Input Device</b> = BlackHole 2ch, <b>Audio Output Device</b> = your headphones or speakers. Match the sample rate to BlackHole's (Audio MIDI Setup shows it).</li>
+            <li>Same tab → <b>Input Config</b>: turn on the stereo pair 1/2.</li>
+            <li>An audio track: <b>Audio From</b> = Ext. In, <b>1/2</b>. <b>Monitor = Off</b> (you already hear Choir directly). Arm it and record.</li>
+            <li>If takes land a little late, set the track's <b>Track Delay</b> negative, or nudge the clip.</li>
+          </ol>
+        </details>
       </div>
 
       <div class="card legend">
@@ -84,7 +111,8 @@
       </div>
 
       <div class="how">
-        <p><em>The keyboard.</em> The columns are do re mi fa sol la ti do in every key, so the left column is always home. The bottom half of the grid is one octave and the top half the octave above. Each key is a bar four pads tall: its lower half shows what it would bring, and the bar fills while it sounds. In minor, the 6th and 7th rise when you climb to them and fall when you come down, as singers do.</p>
+        <p><em>The keyboard.</em> The columns are do re mi fa sol la ti do in every key, so the left column is always home. The bottom half of the grid is one octave and the top half the octave above. In minor, the 6th and 7th rise when you climb to them and fall when you come down, as singers do.</p>
+        <p><em>Each key is a tension ladder:</em> four chords for the same note, from the most settled at the bottom to the most tense at the top, each lit in the colour of what it does. To resolve, press lower in the key; to build, press higher. After a chord that wants to go somewhere, the pads that take it there <b>pulse</b>: after a dominant (V, vii°), its tonic; after a chord like V/ii, its target (ii); after an away chord, a dominant. The note under the chord tells you what the pulsing means.</p>
         <p><em>Where the phrase goes: the right column.</em> Eight keys: home at the top, then the five keys Bach's chorales most often move to, the parallel major or minor, and one far key. Each is lit by how far it is from where you are: green is a step away (it shares all but one note), amber further, red far. The key you're in pulses. Press one to take the phrase there. The grid re-centres on that key, and two kinds of key light up in turn: <b data-fn="tension">amber</b> is the way in (the choir sings the new key's dominant), then <b data-fn="home">green</b> lands on its tonic. Press the key you're already in to end the phrase there the same way: a cadence. Press a blinking button again to stay where you are. (C on the keyboard does the same for the key you're in.)</p>
         <p><em>Top row:</em> the piece's home key down a fifth or up a fifth, major/minor, new piece (back home), latch, then alto, tenor and bass on/off. With latch on (the default), each chord rings until your next note, so you don't have to keep time. N starts a new piece and L toggles latch.</p>
       </div>

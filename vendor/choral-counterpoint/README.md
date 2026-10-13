@@ -9,7 +9,7 @@ These files are copied from [DashWieland/choral-counterpoint](https://github.com
 | `log1p.js` | The engine's deterministic `log1p` |
 | `audio.js` | The hurdy-gurdy's barrel organ |
 
-**One change.** A single `export { … }` line is appended to `engine.js`. It exposes the internals the live harmonizer uses: `CHORDS`, `SCALES`, `PAIRS`, `oracleMoves`, `voicings`, `concretize`, `pairParallel` and `isChromatic`. Nothing else differs. `composePiece(1…300)` was checked identical to upstream on 2026-10-10.
+**One change.** A single `export { … }` line is appended to `engine.js`. It exposes the internals the live harmonizer uses: `CHORDS`, `SCALES`, `PAIRS`, `oracleMoves`, `voicings`, `concretize`, `pairParallel`, `isChromatic`, and the ornament checker `checkSurface`. Nothing else differs. `composePiece(1…300)` was checked identical to upstream on 2026-10-10.
 
 **Updating.** Re-copy the four files from upstream, then re-append the export line.
 

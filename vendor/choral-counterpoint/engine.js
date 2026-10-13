@@ -1201,5 +1201,5 @@ export function composePiece(pieceNumber, density = 1.0) {
 
 // --- added in the launchpad repo's vendored copy (no behaviour change) ------
 // The live harmonizer (choir/harmonizer.js) composes one chord at a time from
-// these internals; composePiece and the pieces it writes are untouched.
-export { CHORDS, SCALES, PAIRS, oracleMoves, voicings, concretize, pairParallel, isChromatic };
+// these internals, and choir/figures.js checks its ornaments with checkSurface; composePiece and the pieces it writes are untouched.
+export { CHORDS, SCALES, PAIRS, oracleMoves, voicings, concretize, pairParallel, isChromatic, checkSurface };
