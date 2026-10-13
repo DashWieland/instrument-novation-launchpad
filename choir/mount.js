@@ -56,7 +56,7 @@ const HTML = recording => `
   <div class="choir-bar">
     <button type="button" class="choir-btn choir-connect" data-part="connect">connect a Launchpad</button>
     <button type="button" class="choir-btn choir-hush" data-part="hush">hush</button>
-    <p class="choir-status" data-part="status" role="status">Press any lit pad to play. A Launchpad Mini (2013) works too, in Chrome or Edge.</p>
+    <p class="choir-status" data-part="status" role="status">Press any lit pad.</p>
   </div>
   <div class="choir-stage">
     <div class="choir-board"><div class="choir-grid" data-part="grid"></div></div>
@@ -71,21 +71,20 @@ const HTML = recording => `
       </dl>
       <p class="choir-history" data-part="history" aria-label="the chords so far"></p>
       <ul class="choir-legend">
-        <li><i data-fn="home"></i><span><b>home</b> · the tonic or its relative. Rest.</span></li>
-        <li><i data-fn="away"></i><span><b>away</b> · leaving home (ii, IV).</span></li>
-        <li><i data-fn="tension"></i><span><b>tension</b> · wants to resolve (V, vii°).</span></li>
-        <li><i data-fn="pulse"></i><span><b>pulsing</b> · where the last chord wants to go.</span></li>
+        <li><i data-fn="home"></i><span><b>home</b> · rest</span></li>
+        <li><i data-fn="away"></i><span><b>away</b> · leaving</span></li>
+        <li><i data-fn="tension"></i><span><b>tension</b> · wants to resolve</span></li>
+        <li><i data-fn="pulse"></i><span><b>pulsing</b> · where the last chord wants to go</span></li>
       </ul>
     </div>
   </div>
   <details class="choir-how">
     <summary>how to play</summary>
     <div class="choir-how-body">
-      <p><em>The keyboard.</em> The columns are do re mi fa sol la ti do in every key, so the left column is always home. The bottom half of the grid is one octave and the top half the octave above. In minor, the 6th and 7th rise when you climb to them and fall when you come down, as singers do.</p>
-      <p><em>Each key is a tension ladder</em>: four chords for the same note, the most settled at the bottom, the most tense at the top. Press lower to resolve, higher to build. After a chord that wants to go somewhere, the pads that take it there pulse.</p>
-      <p><em>The right column</em> takes the phrase to another key. Each is lit by how far it is from where you are: green a step away, amber further, red far; the key you're in pulses. Press one, then follow the lights: amber keys are the way in (the new key's dominant), then a green key lands on its tonic. Press the key you're in to end a phrase where you are; press a blinking one again to stay.</p>
-      <p><em>The top row</em> moves the home key down or up a fifth, switches major and minor, starts a new piece, and turns latch, alto, tenor and bass on or off. With latch on, each chord rings until your next note. Hush silences the choir. On a keyboard: N new piece, L latch, C end the phrase here.</p>
-      <p><em>The Launchpad.</em> An original Launchpad Mini (2013, red and green lights) plugged in before you press <em>connect</em> plays everything above, in Chrome or Edge. The screen and the Launchpad stay in step; play on either.</p>
+      <p>Columns run do to do. Bottom half low, top half high.</p>
+      <p>Each key's four pads are four chords for the same note, settled at the bottom, tense at the top.</p>
+      <p>The right column changes key. Green is close, red is far. Pick one, play amber, then green.</p>
+      <p>Top row: key down or up a fifth, major/minor, new piece, latch, alto, tenor, bass.</p>
     </div>
   </details>
   ${recording ? `
@@ -96,7 +95,7 @@ const HTML = recording => `
         <label>hear it on <select data-part="hear" disabled><option>play a note first</option></select></label>
         <label>also send to <select data-part="send" disabled><option value="">nothing</option></select></label>
       </div>
-      <p data-part="outnote">Send a copy to BlackHole 2ch and record its input in your DAW (in Ableton: Audio From Ext. In 1/2, Monitor Off). The rest of your computer keeps its own output.</p>
+      <p data-part="outnote">Send a copy to BlackHole 2ch, then record that input in your DAW.</p>
       <button type="button" class="choir-btn" data-part="names" hidden>show device names</button>
     </div>
   </details>` : ''}
@@ -298,11 +297,11 @@ export function mountChoir(container, { recording = false } = {}) {
 
   grid.on('status', ({ status }) => {
     $('status').textContent = {
-      connected: 'Launchpad connected. Play on it or on screen.',
-      searching: 'No Launchpad Mini found. Plug it in any time; the screen still plays.',
-      standby: 'Another page has the Launchpad. Click here to take it back.',
-      denied: 'MIDI permission was refused. The screen still plays.',
-      unsupported: 'This browser has no Web MIDI. The screen plays; for the Launchpad, use Chrome or Edge.',
+      connected: 'Launchpad connected.',
+      searching: 'No Launchpad found. The screen still plays.',
+      standby: 'Another tab has the Launchpad. Click here to take it back.',
+      denied: 'No MIDI permission. The screen still plays.',
+      unsupported: 'No Web MIDI in this browser. The screen still plays.',
     }[status] ?? '';
     root.dataset.midi = status;
   });
@@ -381,9 +380,9 @@ export function mountChoir(container, { recording = false } = {}) {
 
   function hintText(c) {
     if (!c || state.trip) return '';
-    if (DOMINANT.has(c.name)) return `${c.name} wants to go home: the pulsing pads resolve it.`;
-    if (c.name.includes('/')) return `${c.name} leans toward ${c.name.split('/')[1]}: the pulsing pads go there.`;
-    if (functionOf(c.name) === 'away') return 'Away from home: the pulsing pads build tension toward it.';
+    if (DOMINANT.has(c.name)) return `${c.name} wants home. The pulsing pads go there.`;
+    if (c.name.includes('/')) return `${c.name} leans toward ${c.name.split('/')[1]}. The pulsing pads go there.`;
+    if (functionOf(c.name) === 'away') return 'Away. The pulsing pads build tension.';
     return '';
   }
 
@@ -392,7 +391,7 @@ export function mountChoir(container, { recording = false } = {}) {
     $('key').textContent = keyLongName(cur) + (sameKey(cur, state.home) ? '' : ` · home ${keyLongName(state.home)}`);
     const c = state.chord, fn = c ? functionOf(c.name) : null;
     $('chord').textContent = c ? `${c.name.replace('o', '°')}${c.cadence ? ' 𝄐' : ''}` : '—';
-    $('fn').textContent = fn ?? 'play any lit pad';
+    $('fn').textContent = fn ?? '';
     $('fn').dataset.fn = fn ?? '';
     $('hint').textContent = hintText(c);
     for (const v of VOICES) $(`v-${v}`).textContent = c
@@ -409,8 +408,8 @@ export function mountChoir(container, { recording = false } = {}) {
     if (trip) {
       const to = keyLongName(trip.to), homeward = sameKey(trip.to, state.home) && sameKey(cur, trip.to);
       $('trip').textContent = phase(harm, trip.to) === 'arrive'
-        ? `Now a green pad lands ${homeward ? 'home' : `in ${to}`}.`
-        : `On the way to ${to}: an amber pad brings its dominant, then a green one lands.`;
+        ? `A green pad lands ${homeward ? 'home' : `in ${to}`}.`
+        : `Heading to ${to}. Amber first, then green.`;
     }
     // screen readers: each pad says its note and chord
     for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
