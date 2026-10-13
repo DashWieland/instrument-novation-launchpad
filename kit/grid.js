@@ -20,7 +20,7 @@ import { Twin } from './twin.js';
 const SPEAKS_ORIGINAL = name => /launchpad/i.test(name) && !/mk ?[23]|pro|lpmini|lpx|\bx\b/i.test(name);
 
 export class Grid {
-  constructor({ twin = null, labels = {}, maxFps = 120 } = {}) {
+  constructor({ twin = null, labels = {}, colour, maxFps = 120 } = {}) {
     this.current = new Frame();
     this.renderer = new Renderer();
     this.listeners = new Map();
@@ -35,10 +35,15 @@ export class Grid {
     this.lastSend = 0;
     this.flushTimer = 0;
     if (twin) {
-      this.twin = twin instanceof Twin ? twin : new Twin(twin, { labels });
+      this.twin = twin instanceof Twin ? twin : new Twin(twin, { labels, colour });
       this.twin.onInput = (type, index) => this.#input(type, index, 'twin');
     }
-    addEventListener('pagehide', () => this.close());
+    // window listeners, kept so dispose() can take them off again
+    this.onPageHide = () => this.close();
+    this.onFocus = () => this.claim();
+    this.onPointer = () => this.claim();
+    this.onState = () => this.#bind();
+    addEventListener('pagehide', this.onPageHide);
 
     // One page drives the Mini at a time. Pages from the same origin pass it
     // between them over a BroadcastChannel: the page last connected, focused
@@ -50,8 +55,8 @@ export class Grid {
     if (this.channel) this.channel.onmessage = ({ data }) => {
       if (data?.type === 'claim' && data.id !== this.id) this.#yieldDevice();
     };
-    addEventListener('focus', () => this.claim());
-    addEventListener('pointerdown', () => this.claim(), true);
+    addEventListener('focus', this.onFocus);
+    addEventListener('pointerdown', this.onPointer, true);
   }
 
   // Take the Mini from any other page and redraw it from scratch.
@@ -102,7 +107,7 @@ export class Grid {
         return this.#setStatus('denied', err2.message);
       }
     }
-    this.access.addEventListener('statechange', () => this.#bind());
+    this.access.addEventListener('statechange', this.onState);
     this.#bind();
     return this.status;
   }
@@ -137,6 +142,23 @@ export class Grid {
   }
 
   // Leave the Mini dark when the page goes away.
+  // Everything off: LEDs dark, MIDI released, listeners and channel gone, the
+  // twin removed. For a page that unmounts the instrument (SPA navigation).
+  dispose() {
+    this.close();
+    removeEventListener('pagehide', this.onPageHide);
+    removeEventListener('focus', this.onFocus);
+    removeEventListener('pointerdown', this.onPointer, true);
+    this.access?.removeEventListener('statechange', this.onState);
+    if (this.input) this.input.onmidimessage = null;
+    if (this.scrolling) { clearTimeout(this.scrolling.timer); this.scrolling = null; }
+    this.channel?.close();
+    this.channel = null;
+    this.listeners.clear();
+    this.twin?.destroy();
+    this.input = this.output = this.access = null;
+  }
+
   close() {
     clearTimeout(this.flushTimer);
     if (this.output) this.#send(MSG.reset());
@@ -181,9 +203,11 @@ export class Grid {
 
   // Show a frame on the twin now and on the Mini as soon as the frame-rate
   // cap allows. Unchanged frames cost nothing.
-  show(frame) {
+  // `twinFrame`, if given, is what the twin shows instead (e.g. a steady mark
+  // where the hardware blinks, for a reader who asked for reduced motion).
+  show(frame, twinFrame) {
     this.current = frame instanceof Frame ? frame.copy() : new Frame(frame);
-    this.twin?.render(this.current);
+    this.twin?.render(twinFrame ?? this.current);
     this.#flush();
   }
 

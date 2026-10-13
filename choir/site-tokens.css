@@ -1,0 +1,267 @@
+/* apophenia's design tokens, for previewing choir in this repo as it will
+   look on the site. Copied from dash_website styles/globals.css at commit
+   c38a312 (2026-10-04): the obverse (:root) and the reverse face. The site's
+   own globals.css is the source of truth; this file is NOT copied to the site
+   (choir.css is, and reads these same names from the site's real tokens).
+   Re-copy if the site's tokens change. */
+
+:root {
+  /* The OBVERSE — the front of the Scratched Plaster coin (plaster ground,
+     soot ink) — is the attribute-less default: what a document paints with no
+     data-theme at all. Living-theme generator output, seed 32 (light).
+     Regenerate: lib/theme-generator.ts → generateTheme(32, 'light');
+     test:theme asserts the shipped values ARE that output. The reverse (soot
+     ground) is the [data-theme="reverse"] override below. */
+  --color-bg:             #e9dfcb;
+  --color-surface:        #dfd3bd;
+  /* One step BELOW surface — a recessed well (the MCV program pane), the
+     opposite gesture to a raised panel. Not derivable as a color-mix: the
+     obverse sinks away from bg (darker than the paper it sits on), the reverse
+     sinks toward it, so the pair is authored per face. */
+  --color-surface-sunken: #d4c6ab;
+  --color-border:         #baac92;
+  --color-text-primary:   #1a1813;
+  --color-text-secondary: #48433a;
+  --color-accent-1:       #9d2e1b;  /* Pompeian red — primary interactive, and the break on the obverse */
+  --color-accent-2:       #644695;  /* bruise purple */
+  --color-accent-3:       #3e6352;  /* verdigris */
+  --color-signal:         #996f00;  /* ochre — callouts, one key thing per view */
+  --color-accent-5:       #346074;  /* tarnished blue — data series only */
+  --color-accent-6:       #8a3c51;  /* dried rose */
+  --color-danger:         #6c1b27;  /* errors and destructive actions only */
+  /* Fonts compose the next/font output (app/layout.tsx puts --font-*-loaded on
+     <html>, holding the family and, for Cinzel and Plex, its size-adjusted
+     fallback) with the readable family as a fallback for any document that
+     lacks the class. Never declare a --font-* token as a bare family here (the
+     font-cascade check in tools/check-theme-tokens.mjs says why).
+
+     Four faces (Scratched Plaster). These are the primitives; text is set
+     through the --type-* ROLES below, which pick a face.
+       display  Cinzel 600 — anything cut into stone: titles, headings, the
+                word square. Its lowercase is drawn as small capitals, so a
+                sentence-case title becomes an inscription; there is no italic.
+       body     IM Fell English — everything read, and every label, button
+                and date too, set in capitals. Italic, no bold.
+       body-sc  IM Fell English SC — the small-caps <strong>, since Fell has
+                no bold and a synthesized one smears the inked wobble.
+       mono     IBM Plex Mono — what must align: code, tick labels, tabular
+                figures, footnote numbers, the MCV program. Never prose. */
+  --font-display: 'Cinzel', serif;
+  --font-body:    'IM Fell English', serif;
+  --font-body-sc: 'IM Fell English SC', serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+  --space-xs: 6px;
+  --space-sm: 12px;
+  --space-md: 24px;
+  --space-lg: 48px;
+  --space-xl: 96px;
+  /* The SiteHeader's height, and the header IS this height: it takes it as a
+     min-height (SiteHeader.module.css), so the token is true by construction.
+     Anything pinned or landing under the header reads it (sticky tops, anchor
+     margins, chart tips). rem, so it grows with a reader's text size the way
+     the header's own text does; 76px at the default 16px. 48px on a phone,
+     below. Registered as a <length> (@property, after this block) so script
+     reads resolved px: "76px", not "4.75rem". */
+  --header-height: 4.75rem;
+
+  /* ── Container rails ──────────────────────────────────────────────────────
+     Two sanctioned widths: the reading measure and the wide shell. The
+     reading rail is a TYPE decision as much as a layout one: 600px holds ~75
+     characters per line of 20px Fell (Bringhurst's 45–75).
+     Measured live on /dev/type. */
+  --width-reading: 600px;
+  --width-wide:    960px;
+  /* The asymmetric right gutter at --bp-wide: wide rail minus reading rail.
+     Sidenotes hang in it; figures break out into it. */
+  --width-margin:  calc(var(--width-wide) - var(--width-reading));
+
+  /* ── Line-height / letter-spacing primitives ─────────────────────────────
+     Shared values the roles below are built from. */
+  --leading-tight:   1.15;  /* titles */
+  --leading-heading: 1.2;   /* section headings */
+  --leading-body:    1.7;   /* prose */
+  --tracking-title:  0.06em;   /* display titles — Cinzel is cut tracked wide */
+  --tracking-label:  0.08em;   /* Fell capitals: labels, buttons, table heads */
+  --tracking-kicker: 0.12em;   /* Fell capitals: eyebrows over titles */
+
+  /* ── Type roles ───────────────────────────────────────────────────────────
+     The typographic counterpart of the color roles. A component asks for what
+     its text IS (a caption, a date, a label) and never for a size, so one
+     edit here moves every caption on the site, the way one seed moves the
+     palette. Each role is five parts — family, size, leading, tracking, case
+     — applied whole by the matching .t-<role> class, or part by part in a
+     module stylesheet. The type ratchet (tools/check-theme-tokens.mjs) fails
+     any font-size in components/ or app/ that isn't a --type-* token.
+
+     Sizes are set for IM Fell English, whose lowercase stands 0.46em tall
+     against Arial's 0.52 and whose light, irregular strokes need size to
+     survive a 1× screen. Floors, by tier:
+     sentences ≥ 16px, wayfinding ≥ 15px, capitals ≥ 14px. Chart SVG text is
+     drawn at constant CSS px by the chart grammar and stays outside these
+     roles until a JS mirror joins them (--type-tick holds its place). */
+
+  /* Reading — IM Fell English */
+  --type-body-family:     var(--font-body);
+  --type-body-size:       1.25rem;      /* 20px — prose */
+  --type-body-leading:    var(--leading-body);
+  --type-body-tracking:   normal;
+  --type-body-case:       none;
+  --type-lead-family:     var(--font-body);
+  --type-lead-size:       1.375rem;     /* 22px — dek, Lede, one step above body */
+  --type-lead-leading:    1.5;
+  --type-lead-tracking:   normal;
+  --type-lead-case:       none;
+  --type-excerpt-family:  var(--font-body);
+  --type-excerpt-size:    1.125rem;     /* 18px — card and index descriptions */
+  --type-excerpt-leading: 1.55;
+  --type-excerpt-tracking: normal;
+  --type-excerpt-case:    none;
+  --type-caption-family:  var(--font-body);
+  --type-caption-size:    1.0625rem;    /* 17px — figure captions, chart subtitles, instrument instructions */
+  --type-caption-leading: 1.5;
+  --type-caption-tracking: normal;
+  --type-caption-case:    none;
+  --type-sidenote-family: var(--font-body);
+  --type-sidenote-size:   1.0625rem;    /* 17px — sidenotes / footnotes */
+  --type-sidenote-leading: 1.5;
+  --type-sidenote-tracking: normal;
+  --type-sidenote-case:   none;
+  --type-note-family:     var(--font-body);
+  --type-note-size:       1rem;         /* 16px — small print: chart notes, legends, tooltips */
+  --type-note-leading:    1.5;
+  --type-note-tracking:   normal;
+  --type-note-case:       none;
+
+  /* Wayfinding — IM Fell English */
+  --type-nav-family:      var(--font-body);
+  --type-nav-size:        1.0625rem;    /* 17px — site nav, contents, the hero's choices */
+  --type-nav-leading:     1.3;
+  --type-nav-tracking:    0.02em;
+  --type-nav-case:        none;
+  --type-meta-family:     var(--font-body);
+  --type-meta-size:       0.9375rem;    /* 15px — dates, reading time, back links, footer */
+  --type-meta-leading:    1.4;
+  --type-meta-tracking:   0.02em;
+  --type-meta-case:       none;
+
+  /* Labels — IM Fell English capitals */
+  --type-label-family:    var(--font-body);
+  --type-label-size:      0.875rem;     /* 14px — labels, buttons, table heads */
+  --type-label-leading:   1.3;
+  --type-label-tracking:  var(--tracking-label);
+  --type-label-case:      uppercase;
+  --type-kicker-family:   var(--font-body);
+  --type-kicker-size:     0.875rem;     /* 14px — the eyebrow over a title */
+  --type-kicker-leading:  1.3;
+  --type-kicker-tracking: var(--tracking-kicker);
+  --type-kicker-case:     uppercase;
+
+  /* Display — Cinzel */
+  --type-title-family:    var(--font-display);
+  --type-title-size:      clamp(1.875rem, 4.5vw, 2.75rem); /* page titles */
+  --type-title-leading:   var(--leading-tight);
+  --type-title-tracking:  var(--tracking-title);
+  --type-title-case:      none;
+  --type-index-title-family: var(--font-display);
+  --type-index-title-size: 2rem;        /* index pages, the about page's name */
+  --type-index-title-leading: var(--leading-tight);
+  --type-index-title-tracking: normal;
+  --type-index-title-case: none;
+  --type-h2-family:       var(--font-display);
+  --type-h2-size:         1.625rem;     /* in-prose section heading */
+  --type-h2-leading:      var(--leading-heading);
+  --type-h2-tracking:     var(--tracking-title);
+  --type-h2-case:         none;
+  --type-h3-family:       var(--font-display);
+  --type-h3-size:         1.3125rem;    /* in-prose h3, chart titles — one step above body */
+  --type-h3-leading:      1.25;
+  --type-h3-tracking:     var(--tracking-title);
+  --type-h3-case:         none;
+  --type-card-title-family: var(--font-display);
+  --type-card-title-size: 1.375rem;     /* post titles in the feed and indexes */
+  --type-card-title-leading: 1.25;
+  --type-card-title-tracking: var(--tracking-title);
+  --type-card-title-case: none;
+
+  /* Mono — IBM Plex Mono: what must align */
+  --type-data-family:     var(--font-mono);
+  --type-data-size:       0.875rem;     /* 14px — table cells, readouts, chart tooltips */
+  --type-data-leading:    1.5;
+  --type-data-tracking:   normal;
+  --type-data-case:       none;
+  --type-code-family:     var(--font-mono);
+  --type-code-size:       0.9em;        /* inline code: relative to the text around it */
+  --type-code-block-size: 1rem;         /* program listings and output */
+  --type-fn-family:       var(--font-mono);
+  --type-fn-size:         0.75rem;      /* 12px — footnote reference numerals (superscript) */
+  --type-tick-family:     var(--font-mono);
+  --type-tick-size:       0.6875rem;    /* 11px — HTML chart axis labels; a placeholder (see above) */
+
+  /* Flourishes — one-off display sizes, named so no component holds a raw
+     size. They carry no floor: each is far above it. */
+  --type-wordmark-size:   1.75rem;
+  --type-dropcap-size:    3.75rem;
+  --type-display-size:    clamp(3.5rem, 7vw, 5.5rem);
+  --type-glyph-size:      1.4rem;       /* the MCV playground's instruction glyphs */
+  --type-symbol-size:     2rem;         /* the decay portrait's symbols */
+}
+
+[data-theme="reverse"] {
+  /* The REVERSE (soot ground, plaster ink): the same seed, 32, in the dark
+     polarity — the back of the coin. Opt-in only: the toggle sets the
+     attribute and remembers it; nothing (not prefers-color-scheme) sets it
+     for the visitor. */
+  --color-bg:             #1a1813;
+  --color-surface:        #27241e;
+  --color-surface-sunken: #1e1b16;
+  --color-border:         #45423b;
+  --color-text-primary:   #e9dfcb;
+  --color-text-secondary: #9a917f;
+  --color-accent-1:       #da6b56;
+  --color-accent-2:       #9c7fd1;
+  --color-accent-3:       #6f9d87;  /* verdigris — the break on the reverse */
+  --color-signal:         #d9a524;
+  --color-accent-5:       #80a1b1;
+  --color-accent-6:       #ca7288;
+  --color-danger:         #9a3d46;
+}
+
+/* ---- the standalone page's frame, standing in for the site's PageContainer
+   and PageHeader ---- */
+*, *::before, *::after { box-sizing: border-box; }
+html { font-synthesis: none; }
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--type-body-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-leading);
+}
+a { color: var(--color-accent-1); }
+.page { max-width: var(--width-wide); margin: 0 auto; padding: var(--space-lg) var(--space-md) var(--space-xl); display: grid; gap: var(--space-md); }
+@media (max-width: 640px) { .page { padding: var(--space-md) var(--space-sm) var(--space-lg); } }
+.page-header { display: grid; gap: var(--space-xs); }
+.page-header .kicker {
+  margin: 0;
+  font-family: var(--type-kicker-family); font-size: var(--type-kicker-size);
+  letter-spacing: var(--type-kicker-tracking); text-transform: var(--type-kicker-case);
+  color: var(--color-text-secondary);
+}
+.page-header h1 {
+  margin: 0;
+  font-family: var(--type-title-family); font-size: var(--type-title-size);
+  line-height: var(--type-title-leading); letter-spacing: var(--type-title-tracking);
+  font-weight: 600;
+}
+.page-header .coin {
+  justify-self: start;
+  font-family: var(--type-label-family); font-size: var(--type-label-size);
+  letter-spacing: var(--type-label-tracking); text-transform: var(--type-label-case);
+  background: none; border: 0; padding: 0; color: var(--color-accent-1); cursor: pointer;
+}
+.caption {
+  margin: 0; max-width: var(--width-reading);
+  font-family: var(--type-caption-family); font-size: var(--type-caption-size);
+  line-height: var(--type-caption-leading); color: var(--color-text-secondary);
+}

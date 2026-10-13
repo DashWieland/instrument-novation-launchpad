@@ -2,25 +2,15 @@
 // and sends the same press and release events, so instruments can be built,
 // played and checked without the device.
 
-import { SIZE, levels, describe } from './launchpad.js';
+import { SIZE, describe } from './launchpad.js';
 
-// Hand-tuned to what this unit looks like (HARDWARE.md): red at full with any
-// green reads as one orange; dim levels sit close to the dark pad.
-const LOOK = [
-  // green 0     1          2          3          (rows: red 0–3)
-  [null,      '#24552a', '#2f9334', '#43d146'],
-  ['#5c1f16', '#5f5520', '#6d9a2e', '#8fd33f'],
-  ['#9a2a18', '#a3631f', '#b39a28', '#c8d23c'],
-  ['#e8361f', '#f07524', '#f48a26', '#f69a2a'],
-];
-export function cssColour(code) {
-  const { red, green } = levels(code);
-  return LOOK[red][green];
-}
-
+// colour(code) → a CSS colour (a var() is fine) or null for an unlit key. The
+// caller supplies it, so the twin itself carries no palette: kit pages use
+// kit/look.js, a themed site maps codes to its tokens.
 export class Twin {
-  constructor(container, { labels = {}, onInput = null } = {}) {
+  constructor(container, { labels = {}, onInput = null, colour = () => null } = {}) {
     this.onInput = onInput;
+    this.colour = colour;
     this.root = document.createElement('div');
     this.root.className = 'twin';
     this.cells = new Array(SIZE);
@@ -92,7 +82,7 @@ export class Twin {
     for (let i = 0; i < SIZE; i++) {
       if (this.codes[i] === data[i]) continue;
       this.codes[i] = data[i];
-      const css = cssColour(data[i]);
+      const css = this.colour(data[i]);
       const el = this.cells[i];
       el.style.setProperty('--led', css ?? 'transparent');
       el.classList.toggle('lit', css !== null);
@@ -101,4 +91,9 @@ export class Twin {
 
   // Outline a key while it is held on the hardware.
   mark(index, held) { this.cells[index]?.classList.toggle('held', held); }
+
+  // Any other per-key state the instrument wants styled (a class on the key).
+  flag(index, name, on) { this.cells[index]?.classList.toggle(name, on); }
+
+  destroy() { this.root.remove(); }
 }

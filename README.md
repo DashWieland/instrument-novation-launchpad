@@ -3,7 +3,7 @@
 Browser instruments for the **original Launchpad Mini** (2013, red/green LEDs), over Web MIDI.
 
 - `kit/` is a small grid kit.
-- `choir/` is a melody instrument harmonized live by the choral-counterpoint engine (vendored in `vendor/`).
+- `choir/` (**choir**) is a melody instrument harmonized live by the choral-counterpoint engine (vendored in `vendor/`), styled on [apophenia.blog](https://apophenia.blog)'s design system and mountable there.
 - `omen-life/` was the first experiment.
 
 There is no build step and there are no dependencies.
@@ -28,7 +28,17 @@ npm test
 
 The tests use Node's built-in runner and cover the protocol bytes, the renderer and the Life rules.
 
-## Choir
+## choir
+
+**How it's built.** `choir/mount.js` exports `mountChoir(container, { recording })`, which returns `{ dispose, retheme }`. It's framework-free, so the site can mount it from a thin React wrapper, as it does the Choral Hurdy-Gurdy.
+
+- **Styling.** Every colour and size in `choir/choir.css` comes from the host page's design tokens (`--color-*`, `--space-*`, the `--type-*` roles), so it follows both faces of the site's coin. It has no literal colours, no shadows or gradients, corners of at most 2px, and a container query for layout.
+- **The twin's colours are tokens too.** The Launchpad's codes map to what they mean: home is verdigris, away Pompeian red, tension ochre. The Launchpad itself keeps red, green and amber.
+- **Cleanup.** `dispose()` silences the organ, closes its AudioContext, darkens and releases the Launchpad, and removes its timers, listeners and DOM.
+- **The standalone page.** `choir/index.html` previews it as it will look on the site, using a copy of the site's tokens (`choir/site-tokens.css`, from dash_website `c38a312`; not copied to the site) and a "turn the coin" toggle. Only this page has the "record into a DAW" output menus (`recording: true`); the site blocks the microphone, which Chrome needs before it will name output devices.
+- **Sound starts with your first note on screen.** That's your own gesture, not autoplay. **connect a Launchpad** asks for MIDI, and **hush** silences a latched chord.
+- **Reduced motion.** With `prefers-reduced-motion` set, the screen shows still marks where the lights would pulse or blink. The Launchpad still blinks.
+- **Pads on a phone.** At 390px the pads are about 27px across, under the 44px touch guideline. Sixty-four pads don't fit larger on a phone.
 
 You play the melody on the grid, one note at a time, in any rhythm. Each note gets a four-part chord the moment you press it, chosen by the choral-counterpoint engine's own machinery and played on the Choral Hurdy-Gurdy's organ.
 
@@ -187,7 +197,7 @@ await grid.scroll('hello', { speed: 7, colour: C.AMBER });   // resolves when th
 | `launchpad.js` | The protocol. Pure, so it is unit-tested byte for byte against the manual. |
 | `renderer.js` | Turns frames into MIDI messages. It sends only changed LEDs, as single-LED messages or one rapid update, and double-buffers so all changes appear at once. |
 | `grid.js` | Web MIDI, hot-plug, events, scrolling text, and diagnostics (`identify()`, `measure()`). Pages pass the Mini between them over a `BroadcastChannel`: the one last connected, focused or clicked drives it, and the others show *standby* and ignore its buttons. This only works within one origin, so open every page from the same address (`127.0.0.1:8766`, not a mix with `localhost`). |
-| `twin.js` | The on-screen grid. |
+| `twin.js` | The on-screen grid. Colours come from the caller (`colour(code)`): the kit pages pass `look.js` (the hand-tuned LED look), and choir passes its tokens. |
 
 **Colours.** `C` names the colours that read as distinct on this unit: `OFF`, `RED_DIM`, `RED`, `GREEN_DIM`, `GREEN`, `AMBER_DIM`, `AMBER`, `YELLOW`. `colour(red, green)` builds any of the 16 codes (each level 0–3).
 

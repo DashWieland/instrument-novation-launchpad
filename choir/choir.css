@@ -1,0 +1,249 @@
+/* choir: the instrument's chrome. Everything here reads the host page's
+   design tokens (apophenia's: --color-*, --space-*, the --type-* roles), so a
+   restyle of the site moves it too, on both faces of the coin. No literal
+   colours or sizes, no shadows, no gradients, corners at most 2px. Layout
+   answers to the instrument's own width (a container query), not the window,
+   so it sits in whatever column it is given. */
+
+.choir {
+  container-type: inline-size;
+  isolation: isolate;
+  display: grid;
+  gap: var(--space-md);
+  color: var(--color-text-primary);
+}
+.choir p, .choir dl, .choir dd, .choir ul { margin: 0; padding: 0; }
+
+/* ------------------------------------------------------------ the bar --- */
+
+.choir-bar {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: var(--space-sm) var(--space-md);
+}
+.choir-btn {
+  font-family: var(--type-label-family);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-leading);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: var(--type-label-case);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-accent-1);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--color-accent-1);
+  cursor: pointer;
+}
+.choir-connect { background: var(--color-accent-1); color: var(--color-bg); }
+.choir-connect:disabled {
+  background: transparent; color: var(--color-text-secondary);
+  border-color: var(--color-border); cursor: default;
+}
+.choir-btn:focus-visible { outline: 2px solid var(--color-signal); outline-offset: 2px; }
+.choir-status {
+  flex: 1 1 18em;
+  font-family: var(--type-caption-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-leading);
+  color: var(--color-text-secondary);
+}
+
+/* ---------------------------------------------------------- the stage --- */
+
+.choir-stage {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-lg);
+  align-items: start;
+}
+@container (max-width: 800px) {
+  .choir-stage { grid-template-columns: minmax(0, 1fr); gap: var(--space-md); }
+}
+
+/* the board: a ruled frame with an offset slab behind it, drawn not shaded */
+.choir-board {
+  position: relative;
+  width: max-content;
+  max-width: 100%;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-text-primary);
+  background: var(--color-bg);
+}
+.choir-board::after {
+  content: '';
+  position: absolute;
+  inset: var(--space-xs) calc(-1 * var(--space-xs)) calc(-1 * var(--space-xs)) var(--space-xs);
+  border: 1px solid var(--color-border);
+  z-index: -1;
+}
+
+/* the twin (kit/twin.js): 8×8 pads, the top row and right column of
+   function buttons, labels above, beside and below */
+.choir .twin {
+  --cell: clamp(26px, calc((100cqw - 2 * var(--space-sm) - 3.4em) / 10.3), 44px);
+  display: grid;
+  gap: calc(var(--cell) * 0.14);
+  grid-template-columns: repeat(9, var(--cell)) auto;
+  grid-template-rows: auto repeat(9, var(--cell)) auto;
+  user-select: none; -webkit-user-select: none;
+  touch-action: none;
+}
+.choir .twin-key {
+  --led: transparent;
+  width: 100%; height: 100%;
+  margin: 0; padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  background: var(--color-surface-sunken);
+  cursor: pointer;
+}
+.choir .twin-key.lit { background: var(--led); border-color: var(--led); }
+/* the Launchpad's round buttons, drawn as diamonds (no circles on this site) */
+.choir .twin-key.top, .choir .twin-key.right { transform: rotate(45deg) scale(0.62); }
+.choir .twin-key.pressed, .choir .twin-key.held { outline: 2px solid var(--color-text-primary); outline-offset: 1px; }
+/* reduced motion: where a light would pulse or blink, a still mark instead */
+.choir .twin-key.choir-mark { outline: 2px solid var(--color-text-primary); outline-offset: -5px; }
+.choir .twin-key:focus-visible { outline: 2px solid var(--color-signal); outline-offset: 2px; }
+
+.choir .twin-label { color: var(--color-text-secondary); overflow: hidden; }
+.choir .twin-label.top {
+  justify-self: center; align-self: end;
+  padding-bottom: var(--space-xs);
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  white-space: nowrap;
+  font-family: var(--type-label-family);
+  font-size: var(--type-label-size);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: var(--type-label-case);
+}
+/* a one-glyph label (♭ ♯) stands upright */
+.choir .twin-label.top.choir-glyph { writing-mode: horizontal-tb; transform: none; letter-spacing: 0; }
+.choir .twin-label.right {
+  align-self: center;
+  padding-left: var(--space-xs);
+  white-space: nowrap;
+  font-family: var(--type-data-family);
+  font-size: var(--type-data-size);
+}
+.choir .twin-label.bottom {
+  text-align: center;
+  white-space: pre-line;
+  padding-top: var(--space-xs);
+  font-family: var(--type-data-family);
+  font-size: var(--type-data-size);
+  line-height: var(--type-data-leading);
+}
+@container (max-width: 480px) {
+  .choir .twin-label.bottom { font-size: var(--type-tick-size); }
+}
+
+/* -------------------------------------------------------- the readout --- */
+
+.choir-readout { display: grid; gap: var(--space-xs); min-width: 0; max-width: var(--width-reading); }
+.choir-key, .choir-fn {
+  font-family: var(--type-label-family);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-leading);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: var(--type-label-case);
+  color: var(--color-text-secondary);
+}
+.choir-chord {
+  font-family: var(--type-index-title-family);
+  font-size: var(--type-index-title-size);
+  line-height: var(--type-index-title-leading);
+  letter-spacing: var(--type-index-title-tracking);
+}
+.choir-hint, .choir-trip {
+  font-family: var(--type-caption-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-leading);
+  min-height: calc(var(--type-caption-size) * var(--type-caption-leading));
+}
+.choir-hint { font-style: italic; color: var(--color-text-secondary); }
+.choir-trip { color: var(--color-signal); }
+
+.choir [data-fn="home"] { color: var(--color-accent-3); }
+.choir [data-fn="away"] { color: var(--color-accent-1); }
+.choir [data-fn="tension"] { color: var(--color-signal); }
+
+.choir-voices {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-xs); margin-top: var(--space-sm);
+}
+.choir-voices dt {
+  font-family: var(--type-label-family);
+  font-size: var(--type-label-size);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: var(--type-label-case);
+  color: var(--color-text-secondary);
+}
+.choir-voices dd, .choir-history {
+  font-family: var(--type-data-family);
+  font-size: var(--type-data-size);
+  line-height: var(--type-data-leading);
+}
+.choir-history { color: var(--color-text-secondary); overflow-wrap: anywhere; min-height: calc(var(--type-data-size) * var(--type-data-leading)); }
+.choir-mod { color: var(--color-text-secondary); }
+
+.choir-legend {
+  list-style: none;
+  display: grid; gap: var(--space-xs);
+  margin-top: var(--space-sm);
+  font-family: var(--type-note-family);
+  font-size: var(--type-note-size);
+  line-height: var(--type-note-leading);
+  color: var(--color-text-secondary);
+}
+.choir-legend li { display: flex; gap: var(--space-xs); align-items: baseline; }
+.choir-legend i {
+  flex: none; width: 0.8em; height: 0.8em;
+  border: 1px solid var(--color-border); border-radius: 2px;
+  transform: translateY(0.08em);
+}
+.choir-legend i[data-fn="home"] { background: var(--color-accent-3); }
+.choir-legend i[data-fn="away"] { background: var(--color-accent-1); }
+.choir-legend i[data-fn="tension"] { background: var(--color-signal); }
+.choir-legend i[data-fn="pulse"] { background: var(--color-surface-sunken); outline: 2px solid var(--color-text-primary); outline-offset: -4px; }
+.choir-legend b { font-family: var(--font-body-sc); font-weight: normal; color: var(--color-text-primary); }
+
+/* ----------------------------------------------------- how to play --- */
+
+.choir-how { border-top: 1px solid var(--color-border); padding-top: var(--space-sm); }
+.choir-how summary {
+  cursor: pointer;
+  font-family: var(--type-label-family);
+  font-size: var(--type-label-size);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: var(--type-label-case);
+  color: var(--color-accent-1);
+}
+.choir-how summary:focus-visible { outline: 2px solid var(--color-signal); outline-offset: 2px; }
+.choir-how-body {
+  display: grid; gap: var(--space-sm);
+  margin-top: var(--space-sm);
+  max-width: var(--width-reading);
+  font-family: var(--type-caption-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-leading);
+  color: var(--color-text-secondary);
+}
+.choir-how-body em { color: var(--color-text-primary); }
+
+/* recording (this repo's standalone page only) */
+.choir-outs { display: grid; gap: var(--space-xs); }
+.choir-outs label {
+  display: grid; grid-template-columns: 8em minmax(0, 1fr);
+  gap: var(--space-xs); align-items: center;
+  font-family: var(--type-label-family);
+  font-size: var(--type-label-size);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: var(--type-label-case);
+}
+.choir-outs select {
+  min-width: 0;
+  font-family: var(--type-data-family);
+  font-size: var(--type-data-size);
+  padding: var(--space-xs);
+  border: 1px solid var(--color-border); border-radius: 2px;
+  background: var(--color-surface); color: var(--color-text-primary);
+}

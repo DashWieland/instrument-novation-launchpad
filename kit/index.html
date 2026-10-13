@@ -92,10 +92,10 @@
 <script type="module">
 import { Grid } from './grid.js';
 import { C, SIZE, colour, gridIndex, topIndex } from './launchpad.js';
-import { cssColour } from './twin.js';
+import { cssColour } from './look.js';
 
 const $ = id => document.getElementById(id);
-const grid = new Grid({ twin: $('twin') });
+const grid = new Grid({ twin: $('twin'), colour: cssColour });
 const NAMED = Object.entries(C);                // [name, code], 8 entries
 let mode = 'test';
 

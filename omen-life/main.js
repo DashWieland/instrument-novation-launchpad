@@ -9,6 +9,7 @@
 
 import { Grid } from '../kit/grid.js';
 import { C, topIndex } from '../kit/launchpad.js';
+import { cssColour } from '../kit/look.js';
 import { RULES, parseRule, step, changes, population, key, seeded, prng } from './life.js';
 import { Sound } from './sound.js';
 
@@ -24,6 +25,7 @@ const clock = () => performance.now() / 1000;
 
 const grid = new Grid({
   twin: $('twin'),
+  colour: cssColour,
   labels: { top: TOP, right: RULES.map(r => r.name) },
 });
 let sound = null;

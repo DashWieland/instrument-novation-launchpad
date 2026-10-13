@@ -3,122 +3,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Choir</title>
-<link rel="stylesheet" href="../kit/kit.css">
-<style>
-  .layout { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 32px; margin-top: 26px; align-items: start; }
-  @media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
-  .side { display: grid; gap: 16px; min-width: 0; }
-  .now { display: flex; gap: 22px; align-items: baseline; flex-wrap: wrap; }
-  .chordbox { min-width: 4ch; }
-  #chord { font: 500 40px/1 var(--serif); color: var(--ink); }
-  #fn { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin-top: 6px; }
-  #hint { font-size: 12px; color: var(--gold); margin-top: 4px; max-width: 24ch; }
-  .outs { display: grid; gap: 8px; font-size: 13px; }
-  .outs label { display: grid; grid-template-columns: 9em minmax(0, 1fr); align-items: center; gap: 8px; color: var(--muted); }
-  .outs select { min-width: 0; width: 100%; }
-  .steps { margin: 8px 0 0; padding-left: 1.3em; display: grid; gap: 4px; color: var(--muted); }
-  .steps b { color: var(--ink); font-weight: 500; }
-  summary { cursor: pointer; color: var(--ink); }
-  [data-fn="home"] { color: #6fcf6a; }
-  [data-fn="away"] { color: #e8613f; }
-  [data-fn="tension"] { color: #f2a33a; }
-  .satb { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 12px; font-size: 13px; }
-  .satb dt { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
-  .satb dd { margin: 0; }
-  #trip { margin: 12px 0 0; font-size: 13px; color: var(--gold); }
-  .mod { color: var(--muted); font-size: 12px; }
-  #twin .twin { grid-template-columns: repeat(9, var(--cell)) minmax(0, 9.5em); }
-  #twin .twin-label.right { text-transform: none; letter-spacing: 0; font-size: 11px; }
-  dl.meta { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; font-size: 13px; }
-  dl.meta dt { color: var(--muted); }
-  dl.meta dd { margin: 0; }
-  #history { font-size: 13px; line-height: 1.8; word-spacing: 3px; overflow-wrap: anywhere; }
-  .legend { display: grid; gap: 6px; font-size: 12.5px; }
-  .legend > span { display: flex; gap: 10px; align-items: baseline; }
-  .legend .note { margin: 2px 0 0; }
-  .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; transform: translateY(1px); }
-  .how { font-size: 12.5px; color: var(--muted); margin: 0; }
-  .how p { margin: 0 0 8px; }
-  .how em { color: var(--ink); font-style: normal; }
-</style>
+<title>choir</title>
+<meta name="description" content="Play a melody, on screen or on a Launchpad Mini; Bach's rules harmonize every note in four parts as you press it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=IBM+Plex+Mono&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap">
+<link rel="stylesheet" href="site-tokens.css">
+<link rel="stylesheet" href="choir.css">
+<script>
+  // the coin's face, as the site remembers it (the obverse is the absence of a choice)
+  try { if (localStorage.getItem('theme') === 'reverse') document.documentElement.dataset.theme = 'reverse'; } catch {}
+</script>
 </head>
 <body>
-<div class="wrap">
-  <header class="row" style="justify-content: space-between; align-items: baseline;">
-    <div>
-      <h1>Choir</h1>
-      <p class="sub">You play the melody on the Launchpad. Bach's rules give every note a four-part chord the moment you press it.</p>
-    </div>
-    <a class="small" href="../">all instruments</a>
+<main class="page">
+  <header class="page-header">
+    <p class="kicker">an instrument</p>
+    <h1>choir</h1>
+    <button type="button" class="coin" id="coin">turn the coin</button>
   </header>
 
-  <div class="row" style="margin-top: 18px;">
-    <button class="btn primary" id="begin">Begin</button>
-    <span class="status" id="status">Begin starts the organ and asks for MIDI access (Chrome or Edge).</span>
-  </div>
+  <div id="choir" data-vis-mask=""></div>
 
-  <div class="layout">
-    <div id="twin"></div>
-
-    <div class="side">
-      <div class="card">
-        <div class="now">
-          <div class="chordbox"><div id="chord">—</div><div id="fn"></div><div id="hint"></div></div>
-          <dl class="satb">
-            <dt>soprano</dt><dt>alto</dt><dt>tenor</dt><dt>bass</dt>
-            <dd id="v-s">—</dd><dd id="v-a">—</dd><dd id="v-t">—</dd><dd id="v-b">—</dd>
-          </dl>
-        </div>
-        <p id="trip" hidden></p>
-      </div>
-
-      <div class="card">
-        <h2>Output</h2>
-        <div class="outs">
-          <label>hear it on <select id="hear" disabled><option>click Begin first</option></select></label>
-          <label>also send to <select id="send" disabled><option value="">nothing</option></select></label>
-        </div>
-        <p class="small muted" id="outnote" style="margin: 8px 0 0;">Choose after clicking Begin. Send a copy to BlackHole 2ch to record into a DAW; the rest of your Mac keeps its own output.</p>
-        <button class="btn" id="names" hidden style="margin-top: 8px;">Show device names</button>
-        <details class="small" style="margin-top: 10px;">
-          <summary>Recording into Ableton</summary>
-          <ol class="steps">
-            <li>Here: <em>also send to</em> → <b>BlackHole 2ch</b>. Keep <em>hear it on</em> on your headphones or speakers.</li>
-            <li>Ableton → Settings → Audio: <b>Audio Input Device</b> = BlackHole 2ch, <b>Audio Output Device</b> = your headphones or speakers. Match the sample rate to BlackHole's (Audio MIDI Setup shows it).</li>
-            <li>Same tab → <b>Input Config</b>: turn on the stereo pair 1/2.</li>
-            <li>An audio track: <b>Audio From</b> = Ext. In, <b>1/2</b>. <b>Monitor = Off</b> (you already hear Choir directly). Arm it and record.</li>
-            <li>If takes land a little late, set the track's <b>Track Delay</b> negative, or nudge the clip.</li>
-          </ol>
-        </details>
-      </div>
-
-      <div class="card legend">
-        <span><i style="background:#43d146"></i><span><b data-fn="home">Home</b>: this note brings the tonic (I) or its relative (vi). Rest.</span></span>
-        <span><i style="background:#e8361f"></i><span><b data-fn="away">Away</b>: a pre-dominant chord (ii, IV). Leaving home.</span></span>
-        <span><i style="background:#f69a2a"></i><span><b data-fn="tension">Tension</b>: a dominant (V, vii°, iii) or a chord pulling toward another. It wants to resolve.</span></span>
-        <p class="note muted small">A phrase is a short trip: settle on green, step out to red, lean on amber, come home to green. The colors show what each key would bring <em>right now</em> and change after every note. No key is wrong.</p>
-      </div>
-
-      <div class="card">
-        <dl class="meta">
-          <dt>key</dt><dd id="key"></dd>
-          <dt>latch</dt><dd id="latch"></dd>
-          <dt>checked</dt><dd id="check"></dd>
-        </dl>
-        <p class="small muted" style="margin: 12px 0 4px;">so far</p>
-        <div id="history">—</div>
-      </div>
-
-      <div class="how">
-        <p><em>The keyboard.</em> The columns are do re mi fa sol la ti do in every key, so the left column is always home. The bottom half of the grid is one octave and the top half the octave above. In minor, the 6th and 7th rise when you climb to them and fall when you come down, as singers do.</p>
-        <p><em>Each key is a tension ladder:</em> four chords for the same note, from the most settled at the bottom to the most tense at the top, each lit in the colour of what it does. To resolve, press lower in the key; to build, press higher. After a chord that wants to go somewhere, the pads that take it there <b>pulse</b>: after a dominant (V, vii°), its tonic; after a chord like V/ii, its target (ii); after an away chord, a dominant. The note under the chord tells you what the pulsing means.</p>
-        <p><em>Where the phrase goes: the right column.</em> Eight keys: home at the top, then the five keys Bach's chorales most often move to, the parallel major or minor, and one far key. Each is lit by how far it is from where you are: green is a step away (it shares all but one note), amber further, red far. The key you're in pulses. Press one to take the phrase there. The grid re-centres on that key, and two kinds of key light up in turn: <b data-fn="tension">amber</b> is the way in (the choir sings the new key's dominant), then <b data-fn="home">green</b> lands on its tonic. Press the key you're already in to end the phrase there the same way: a cadence. Press a blinking button again to stay where you are. (C on the keyboard does the same for the key you're in.)</p>
-        <p><em>Top row:</em> the piece's home key down a fifth or up a fifth, major/minor, new piece (back home), latch, then alto, tenor and bass on/off. With latch on (the default), each chord rings until your next note, so you don't have to keep time. N starts a new piece and L toggles latch.</p>
-      </div>
-    </div>
-  </div>
-</div>
-<script type="module" src="main.js"></script>
+  <p class="caption">
+    You sing the melody; a four-part choir answers every note the moment you press it.
+    Each chord comes from the <a href="https://github.com/DashWieland/choral-counterpoint">choral-counterpoint</a>
+    engine, the same Bach oracle and voice-leading rules as the
+    <a href="https://apophenia.blog/work/choral-hurdy-gurdy">Choral Hurdy-Gurdy</a>, and is played on its barrel organ.
+    Nothing is looked up ahead: the choir knows only what you have already sung.
+    <a href="https://github.com/DashWieland/instrument-novation-launchpad">Source</a>.
+  </p>
+</main>
+<script type="module">
+  import { mountChoir } from './mount.js';
+  const handle = mountChoir(document.getElementById('choir'), { recording: true });
+  window.choir = handle.debug;
+  document.getElementById('coin').onclick = () => {
+    const el = document.documentElement, reverse = el.dataset.theme !== 'reverse';
+    if (reverse) el.dataset.theme = 'reverse'; else delete el.dataset.theme;
+    try { reverse ? localStorage.setItem('theme', 'reverse') : localStorage.removeItem('theme'); } catch {}
+    handle.retheme();
+  };
+</script>
 </body>
 </html>
